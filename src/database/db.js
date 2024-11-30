@@ -23,7 +23,9 @@ db.serialize(() => {
       last_warning_date DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
+      
   `);
+  console.log("User warnings table created");
 
   // Appeals table
   db.run(`
@@ -36,6 +38,7 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  console.log("Appeals table created");
 
   // Moderation logs table
   db.run(`
@@ -48,6 +51,7 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  console.log("Moderation logs table created");
 });
 
 module.exports = db; 
