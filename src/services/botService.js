@@ -1,50 +1,64 @@
 const whatsappService = require('./whatsappService');
 const adminService = require('./adminService');
 const messageHandler = require('../utils/messageHandler');
+const logger = require('./logService');
 
 class BotService {
   async handleGroupMessage(message) {
-    const { group_id, from, type, text } = message;
-    
-    // First, check message for violations
-    await adminService.handleMessage(group_id, from, message);
-    
-    // Then process commands if message starts with !
-    if (text.body.startsWith('!')) {
-      const command = text.body.substring(1).split(' ')[0].toLowerCase();
-      
-      switch (command) {
-        case 'poll':
-          await this.createPoll(group_id, text.body);
-          break;
-        
-        case 'schedule':
-          await this.scheduleEvent(group_id, text.body);
-          break;
-        
-        case 'welcome':
-          await this.setWelcomeMessage(group_id, text.body);
-          break;
-        
-        case 'rules':
-          await this.showGroupRules(group_id);
-          break;
-        
-        case 'warn':
-          await this.warnUser(group_id, text.body);
-          break;
-        
-        case 'remove':
-          await this.removeUser(group_id, text.body);
-          break;
-        
-        case 'stats':
-          await this.showGroupStats(group_id);
-          break;
-        
-        default:
-          await whatsappService.sendMessage(group_id, 'Unknown command. Available commands: !poll, !schedule, !welcome, !rules, !warn, !remove, !stats');
+    try {
+      // Validate and sanitize message
+      if (!await messageHandler.validateMessage(message)) {
+        return;
       }
+      
+      const { group_id, from, type, text } = message;
+      
+      // First, check message for violations
+      await adminService.handleMessage(group_id, from, message);
+      
+      // Then process commands if message starts with !
+      if (text.body.startsWith('!')) {
+        const parsedCommand = messageHandler.parseCommand(message);
+        if (!parsedCommand) return;
+        
+        switch (parsedCommand.command) {
+          case 'poll':
+            await this.createPoll(group_id, parsedCommand.args.join(' '));
+            break;
+          
+          case 'schedule':
+            await this.scheduleEvent(group_id, parsedCommand.args.join(' '));
+            break;
+          
+          case 'welcome':
+            await this.setWelcomeMessage(group_id, parsedCommand.args.join(' '));
+            break;
+          
+          case 'rules':
+            await this.showGroupRules(group_id);
+            break;
+          
+          case 'warn':
+            await this.warnUser(group_id, parsedCommand.args.join(' '));
+            break;
+          
+          case 'remove':
+            await this.removeUser(group_id, parsedCommand.args.join(' '));
+            break;
+          
+          case 'stats':
+            await this.showGroupStats(group_id);
+            break;
+          
+          default:
+            await whatsappService.sendMessage(group_id, 'Unknown command. Available commands: !poll, !schedule, !welcome, !rules, !warn, !remove, !stats');
+        }
+      }
+    } catch (error) {
+      logger.error('Error handling group message', {
+        error: error.message,
+        message
+      });
     }
   }
 
